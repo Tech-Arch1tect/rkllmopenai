@@ -15,10 +15,13 @@ import (
 	// WARNING!
 	// Pass --git-repo-id and --git-user-id properties when generating the code
 	//
+	"github.com/Tech-Arch1tect/rkllmopenapi/config"
 	sw "github.com/Tech-Arch1tect/rkllmopenapi/go"
 )
 
 func main() {
+	config.LoadConfig()
+
 	routes := sw.ApiHandleFunctions{}
 
 	log.Printf("Server started")

@@ -1,12 +1,13 @@
 module github.com/Tech-Arch1tect/rkllmopenapi
 
-go 1.23.0
+go 1.24.0
 
 toolchain go1.24.2
 
 require github.com/gin-gonic/gin v1.10.0
 
 require (
+	github.com/Tech-Arch1tect/config v0.2.1
 	github.com/bytedance/sonic v1.13.2 // indirect
 	github.com/bytedance/sonic/loader v0.2.4 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
