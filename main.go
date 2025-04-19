@@ -17,11 +17,12 @@ import (
 	//
 	"github.com/Tech-Arch1tect/rkllmopenapi/config"
 	sw "github.com/Tech-Arch1tect/rkllmopenapi/go"
+	"github.com/Tech-Arch1tect/rkllmopenapi/model"
 )
 
 func main() {
 	config.LoadConfig()
-
+	model.RefreshModelList()
 	routes := sw.ApiHandleFunctions{}
 
 	log.Printf("Server started")

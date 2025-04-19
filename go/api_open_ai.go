@@ -10,6 +10,9 @@
 package rkllmopenapi
 
 import (
+	"log"
+
+	"github.com/Tech-Arch1tect/rkllmopenapi/model"
 	"github.com/gin-gonic/gin"
 )
 
@@ -152,8 +155,22 @@ func (api *OpenAIAPI) ListFineTunes(c *gin.Context) {
 // Get /v1/models
 // Lists the currently available models, and provides basic information about each one such as the owner and availability.
 func (api *OpenAIAPI) ListModels(c *gin.Context) {
-	// Your handler implementation
-	c.JSON(501, gin.H{"status": "error", "message": "Not implemented"})
+	list := []Model{}
+	for _, model := range model.ModelList {
+		log.Printf("model: %v", model)
+		list = append(list, Model{
+			Id:      model.ModelName,
+			Object:  "model",
+			OwnedBy: "not-implemented",
+			Created: 0, // not implemented
+		})
+	}
+
+	response := ListModelsResponse{
+		Object: "list",
+		Data:   list,
+	}
+	c.JSON(200, response)
 }
 
 // Get /v1/files/:file_id
