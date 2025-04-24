@@ -10,14 +10,24 @@
 package rkllmopenapi
 
 import (
+	"bufio"
+	"context"
+	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/Tech-Arch1tect/rkllmopenapi/model"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
-type OpenAIAPI struct {
-}
+var runner = model.NewModelRunner(log.Default())
+
+type OpenAIAPI struct{}
 
 // Post /v1/fine-tunes/:fine_tune_id/cancel
 // Immediately cancel a fine-tune job.
@@ -26,18 +36,120 @@ func (api *OpenAIAPI) CancelFineTune(c *gin.Context) {
 	c.JSON(501, gin.H{"status": "error", "message": "Not implemented"})
 }
 
+// Utility function for handling streaming
+func handleStreaming(c *gin.Context, ctx context.Context, modelName string, chatMsgs []model.ChatMessage) {
+	fifo := filepath.Join(os.TempDir(), "rkllm_"+uuid.New().String()+".fifo")
+	if err := model.EnsureFifo(fifo); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create FIFO"})
+		return
+	}
+	defer os.Remove(fifo)
+
+	f, err := os.OpenFile(fifo, os.O_RDWR, os.ModeNamedPipe)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to open FIFO"})
+		return
+	}
+	defer f.Close()
+
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+	c.Writer.WriteHeader(http.StatusOK)
+	flusher, ok := c.Writer.(http.Flusher)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "streaming unsupported"})
+		return
+	}
+
+	go func() {
+		if _, err := runner.Run(ctx, modelName, fifo, chatMsgs); err != nil {
+			log.Printf("Inference error: %v", err)
+		}
+	}()
+
+	reader := bufio.NewReader(f)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			break
+		}
+		chunk := strings.TrimSpace(line)
+		if chunk == "[[EOS]]" {
+			break
+		}
+		fmt.Fprintf(c.Writer, "data: %s\n\n", chunk)
+		flusher.Flush()
+	}
+	fmt.Fprint(c.Writer, "data: [DONE]\n\n")
+	flusher.Flush()
+}
+
+// Common handler for non-streaming completions
+func handleCompletion(c *gin.Context, ctx context.Context, modelName string, chatMsgs []model.ChatMessage) {
+	out, err := runner.Run(ctx, modelName, "", chatMsgs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": gin.H{"message": "inference error", "detail": err.Error()},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":      uuid.New().String(),
+		"object":  "chat.completion",
+		"created": time.Now().Unix(),
+		"model":   modelName,
+		"choices": []gin.H{{
+			"message":       gin.H{"role": "assistant", "content": out},
+			"index":         0,
+			"finish_reason": "stop",
+		}},
+		"usage": gin.H{"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+	})
+}
+
+// Common handler for completions
+func handlePromptCompletion(c *gin.Context, messages []model.ChatMessage, modelName string) {
+	ctx := c.Request.Context()
+
+	if stream := c.DefaultQuery("stream", "false"); stream == "true" {
+		handleStreaming(c, ctx, modelName, messages)
+		return
+	}
+
+	handleCompletion(c, ctx, modelName, messages)
+}
+
 // Post /v1/chat/completions
 // Creates a model response for the given chat conversation.
 func (api *OpenAIAPI) CreateChatCompletion(c *gin.Context) {
-	// Your handler implementation
-	c.JSON(501, gin.H{"status": "error", "message": "Not implemented"})
+	var payload CreateChatCompletionRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	chatMsgs := make([]model.ChatMessage, len(payload.Messages))
+	for i, msg := range payload.Messages {
+		chatMsgs[i] = model.ChatMessage{Role: msg.Role, Content: msg.Content}
+	}
+
+	handlePromptCompletion(c, chatMsgs, payload.Model)
 }
 
 // Post /v1/completions
 // Creates a completion for the provided prompt and parameters.
 func (api *OpenAIAPI) CreateCompletion(c *gin.Context) {
-	// Your handler implementation
-	c.JSON(501, gin.H{"status": "error", "message": "Not implemented"})
+	var payload CreateCompletionRequest
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	userMsg := []model.ChatMessage{{Role: "user", Content: payload.Prompt}}
+
+	handlePromptCompletion(c, userMsg, payload.Model)
 }
 
 // Post /v1/edits
