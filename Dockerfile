@@ -29,14 +29,14 @@ WORKDIR /go/src/app
 COPY go.mod go.sum .
 RUN go mod download
 
-COPY . .
-
 COPY --from=c-builder /src/c/rkllmwrapper/librkllm_wrapper.so /usr/lib/
 COPY --from=c-builder /src/c/rkllmwrapper/rkllm_wrapper.h /usr/include/
 COPY --from=c-builder /usr/lib/librkllmrt.so /usr/lib/
 COPY --from=c-builder /usr/include/rkllm.h /usr/include/   
 COPY --from=c-builder /src/c/tokenizers-cpp/build/libtokenizers_c.a /usr/lib/
 COPY --from=c-builder /src/c/tokenizers-cpp/include/tokenizers_c.h /usr/include/
+
+COPY . .
 
 RUN CGO_ENABLED=1 go build -o bin/app .
 
