@@ -12,6 +12,7 @@ package rkllmopenapi
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -56,6 +57,7 @@ func handleStreaming(c *gin.Context, ctx context.Context, modelName string, chat
 	c.Writer.Header().Set("Cache-Control", "no-cache")
 	c.Writer.Header().Set("Connection", "keep-alive")
 	c.Writer.WriteHeader(http.StatusOK)
+
 	flusher, ok := c.Writer.(http.Flusher)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "streaming unsupported"})
@@ -69,20 +71,56 @@ func handleStreaming(c *gin.Context, ctx context.Context, modelName string, chat
 	}()
 
 	reader := bufio.NewReader(f)
+	firstChunk := true
+
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			break
 		}
-		chunk := strings.TrimSpace(line)
+		chunk := strings.TrimRight(line, "\r\n")
+
 		if chunk == "[[EOS]]" {
+			final := map[string]any{
+				"id":      uuid.New().String(),
+				"object":  "chat.completion.chunk",
+				"created": time.Now().Unix(),
+				"model":   modelName,
+				"choices": []map[string]any{{
+					"index":         0,
+					"delta":         map[string]any{},
+					"finish_reason": "stop",
+				}},
+			}
+			j, _ := json.Marshal(final)
+			fmt.Fprintf(c.Writer, "data: %s\n\n", j)
+			fmt.Fprint(c.Writer, "data: [DONE]\n\n")
+			flusher.Flush()
 			break
 		}
-		fmt.Fprintf(c.Writer, "data: %s\n\n", chunk)
+
+		delta := map[string]any{"content": chunk}
+		if firstChunk {
+			delta["role"] = "assistant"
+			firstChunk = false
+		}
+
+		stream := map[string]any{
+			"id":      uuid.New().String(),
+			"object":  "chat.completion.chunk",
+			"created": time.Now().Unix(),
+			"model":   modelName,
+			"choices": []map[string]any{{
+				"index":         0,
+				"delta":         delta,
+				"finish_reason": nil,
+			}},
+		}
+
+		j, _ := json.Marshal(stream)
+		fmt.Fprintf(c.Writer, "data: %s\n\n", j)
 		flusher.Flush()
 	}
-	fmt.Fprint(c.Writer, "data: [DONE]\n\n")
-	flusher.Flush()
 }
 
 // Common handler for non-streaming completions
@@ -110,10 +148,10 @@ func handleCompletion(c *gin.Context, ctx context.Context, modelName string, cha
 }
 
 // Common handler for completions
-func handlePromptCompletion(c *gin.Context, messages []model.ChatMessage, modelName string) {
+func handlePromptCompletion(c *gin.Context, messages []model.ChatMessage, modelName string, stream bool) {
 	ctx := c.Request.Context()
 
-	if stream := c.DefaultQuery("stream", "false"); stream == "true" {
+	if stream {
 		handleStreaming(c, ctx, modelName, messages)
 		return
 	}
@@ -135,7 +173,7 @@ func (api *OpenAIAPI) CreateChatCompletion(c *gin.Context) {
 		chatMsgs[i] = model.ChatMessage{Role: msg.Role, Content: msg.Content}
 	}
 
-	handlePromptCompletion(c, chatMsgs, payload.Model)
+	handlePromptCompletion(c, chatMsgs, payload.Model, *payload.Stream)
 }
 
 // Post /v1/completions
@@ -149,7 +187,7 @@ func (api *OpenAIAPI) CreateCompletion(c *gin.Context) {
 
 	userMsg := []model.ChatMessage{{Role: "user", Content: payload.Prompt}}
 
-	handlePromptCompletion(c, userMsg, payload.Model)
+	handlePromptCompletion(c, userMsg, payload.Model, *payload.Stream)
 }
 
 // Post /v1/edits
