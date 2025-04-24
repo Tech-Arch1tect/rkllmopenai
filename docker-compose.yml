@@ -1,0 +1,11 @@
+services:
+  app:
+    image: rkllm-openapi:latest
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - STORAGE_PATH=/rkllm
+    volumes:
+      - ../storage:/rkllm
+    privileged: true
