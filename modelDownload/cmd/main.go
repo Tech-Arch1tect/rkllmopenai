@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"log"
@@ -8,11 +8,11 @@ import (
 	"github.com/Tech-Arch1tect/rkllmopenapi/modelDownload"
 )
 
-func main() {
+func Cmd() {
 	config.LoadConfig()
 
 	if len(os.Args) != 4 {
-		log.Fatal("Usage: modelDownload <username> <model_name> <model_file_name>")
+		log.Fatal("Usage: app <username> <model_name> <model_file_name>")
 	}
 
 	// take username as first parameter

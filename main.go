@@ -11,6 +11,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	// WARNING!
 	// Pass --git-repo-id and --git-user-id properties when generating the code
@@ -18,9 +19,14 @@ import (
 	"github.com/Tech-Arch1tect/rkllmopenapi/config"
 	sw "github.com/Tech-Arch1tect/rkllmopenapi/go"
 	"github.com/Tech-Arch1tect/rkllmopenapi/model"
+	"github.com/Tech-Arch1tect/rkllmopenapi/modelDownload/cmd"
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		cmd.Cmd()
+		os.Exit(0)
+	}
 	config.LoadConfig()
 	model.RefreshModelList()
 	routes := sw.ApiHandleFunctions{}
