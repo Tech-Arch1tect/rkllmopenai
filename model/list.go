@@ -1,8 +1,7 @@
 package model
 
 import (
-	"io/fs"
-	"log"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -16,21 +15,13 @@ var (
 func RefreshModelList() {
 	ModelList = ModelList[:0]
 	root := config.C.StoragePath
-
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if !d.IsDir() && strings.HasSuffix(d.Name(), ".rkllm") {
-			ModelList = append(ModelList, Model{
-				ModelName: d.Name(),
-				ModelPath: path,
-				ModelDir:  filepath.Dir(path),
-			})
+			ModelList = append(ModelList, Model{ModelName: d.Name(), ModelPath: path, ModelDir: filepath.Dir(path)})
 		}
 		return nil
 	})
-	if err != nil {
-		log.Fatal(err)
-	}
 }
