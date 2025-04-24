@@ -1,10 +1,23 @@
 module github.com/Tech-Arch1tect/rkllmopenapi
 
-go 1.24.0
+go 1.24.2
 
-toolchain go1.24.2
+require (
+	github.com/gin-gonic/gin v1.10.0
+	github.com/google/uuid v1.6.0
+	github.com/tech-arch1tect/tokenizers-cpp-go v0.1.1
+)
 
-require github.com/gin-gonic/gin v1.10.0
+require (
+	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/kr/pretty v0.1.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+)
+
+require (
+	github.com/kr/text v0.2.0 // indirect
+	github.com/sashabaranov/go-openai v1.38.2
+)
 
 require (
 	github.com/Tech-Arch1tect/config v0.2.1
@@ -24,6 +37,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
+	github.com/tech-arch1tect/rkllmwrapper-go v0.1.3
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.16.0 // indirect
