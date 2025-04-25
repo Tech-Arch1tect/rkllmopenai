@@ -173,7 +173,9 @@ func (api *OpenAIAPI) CreateChatCompletion(c *gin.Context) {
 		chatMsgs[i] = model.ChatMessage{Role: msg.Role, Content: msg.Content}
 	}
 
-	handlePromptCompletion(c, chatMsgs, payload.Model, *payload.Stream)
+	stream := payload.Stream != nil && *payload.Stream
+
+	handlePromptCompletion(c, chatMsgs, payload.Model, stream)
 }
 
 // Post /v1/completions
@@ -187,7 +189,9 @@ func (api *OpenAIAPI) CreateCompletion(c *gin.Context) {
 
 	userMsg := []model.ChatMessage{{Role: "user", Content: payload.Prompt}}
 
-	handlePromptCompletion(c, userMsg, payload.Model, *payload.Stream)
+	stream := payload.Stream != nil && *payload.Stream
+
+	handlePromptCompletion(c, userMsg, payload.Model, stream)
 }
 
 // Post /v1/edits
