@@ -17,8 +17,8 @@ const (
 	MaxNewTokens      = 1024
 	DefaultBufferSize = 16384
 
-	RKLLMInputPrompt = 0
-	RKLLMInputToken  = 1
+	RKLLMInputPrompt int32 = 0
+	RKLLMInputToken  int32 = 1
 )
 
 type ModelRunner struct {
@@ -38,8 +38,13 @@ func (r *ModelRunner) Ensure(ctx context.Context, m Model) error {
 		r.logger.Printf("Destroying previous instance: %s\n", r.currentModel)
 		r.Destroy()
 	}
-	r.logger.Printf("Initialising %s (tokens=%d, ctx=%d)\n", m.ModelPath, MaxNewTokens, ContextSize)
-	if ret := generated.Rkllm_init_simple(m.ModelPath, MaxNewTokens, ContextSize); ret != 0 {
+	opts := generated.RkllmOptions{
+		Max_new_tokens:  MaxNewTokens,
+		Max_context_len: ContextSize,
+	}
+	r.logger.Printf("Initialising %s with opts %+v\n", m.ModelPath, opts)
+	ret := generated.Rkllmwrapper_init(m.ModelPath, []generated.RkllmOptions{opts})
+	if ret != 0 {
 		return fmt.Errorf("initialise %s failed: code %d", m.ModelPath, ret)
 	}
 	r.currentModel = m.ModelName
