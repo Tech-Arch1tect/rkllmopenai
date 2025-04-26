@@ -12,8 +12,8 @@ import (
 )
 
 type TokenizerConfig struct {
-	TokenType      string `json:"tokenizer_class"`
-	ModelMaxLength int    `json:"model_max_length"`
+	TokenType      string      `json:"tokenizer_class"`
+	ModelMaxLength interface{} `json:"model_max_length"`
 }
 
 type Tokenizer struct {
@@ -53,23 +53,32 @@ func (t *Tokenizer) Tokenize(messages []ChatMessage) ([]int32, string, error) {
 	if tok := toks["bos"]; tok != "<nil>" {
 		b.WriteString(tok)
 	}
+
 	for _, m := range messages {
 		rtok := toks[m.Role]
 		b.WriteString(rtok)
 		b.WriteString(" ")
 		b.WriteString(m.Content)
-		if m.Role != "assistant" {
-			if eot := toks["eot"]; eot != "<nil>" && !strings.HasPrefix(eot, "<|Assistant|><think>") {
+
+		if eot := toks["eot"]; eot != "<nil>" {
+			if !(m.Role == "assistant" && strings.HasPrefix(eot, "<|Assistant|><think>")) {
 				b.WriteString(eot)
 			}
 		}
+
 		b.WriteString("\n")
 	}
+
 	if toks["addGenerationPrompt"] == "true" {
 		if eot := toks["eot"]; eot != "<nil>" {
 			b.WriteString(eot)
 		}
 	}
+
+	if toks["postGenerationPrompt"] != "<nil>" {
+		b.WriteString(toks["postGenerationPrompt"])
+	}
+
 	prompt := b.String()
 
 	tokFile := filepath.Join(t.Model.ModelDir, "tokenizer.json")
@@ -100,6 +109,19 @@ var SpecialTokens = map[string]map[string]string{
 		"system":              "<|System|>",
 		"addGenerationPrompt": "true",
 	},
+	"gemma_3": {
+		"unk":                  "<unk>",
+		"eos":                  "<eos>",
+		"pad":                  "<pad>",
+		"bos":                  "<bos>\n",
+		"bot":                  "<nil>",
+		"eot":                  "\n<end_of_turn>",
+		"user":                 "<start_of_turn>user\n",
+		"assistant":            "<start_of_turn>model\n",
+		"system":               "<start_of_turn>system\n",
+		"addGenerationPrompt":  "false",
+		"postGenerationPrompt": "<start_of_turn>model\n",
+	},
 }
 
 func GetSpecialTokens(key string) (map[string]string, bool) {
@@ -112,19 +134,6 @@ func GetSpecialTokens(key string) (map[string]string, bool) {
 
 func GetSimplifiedModelName(full string) string {
 	name := strings.ToLower(strings.TrimSuffix(filepath.Base(full), filepath.Ext(full)))
-
-	variants := []string{}
-	variantPatterns := map[string]*regexp.Regexp{
-		"coder":    regexp.MustCompile(`(?i)(?:^|[-_\s])coder(?:$|[-_\s])`),
-		"math":     regexp.MustCompile(`(?i)(?:^|[-_\s])math(?:$|[-_\s])`),
-		"chat":     regexp.MustCompile(`(?i)(?:^|[-_\s])chat(?:$|[-_\s])`),
-		"instruct": regexp.MustCompile(`(?i)(?:^|[-_\s])instruct(?:$|[-_\s])`),
-	}
-	for tag, re := range variantPatterns {
-		if re.MatchString(name) {
-			variants = append(variants, tag)
-		}
-	}
 
 	qwenRe := regexp.MustCompile(`(?i)(qwen\d*)`)
 	qwenMatch := qwenRe.FindStringSubmatch(name)
@@ -140,23 +149,22 @@ func GetSimplifiedModelName(full string) string {
 		if strings.Contains(family, "2") {
 			family = "qwen2.5"
 		}
-		return appendSuffix(family, name)
+		return family
 	case regexp.MustCompile(`(?i)mistral`).MatchString(name):
-		return appendSuffix("mistral", name)
+		return "mistral"
+	case regexp.MustCompile(`(?i)gemma`).MatchString(name):
+		parts := regexp.MustCompile(`[^a-zA-Z0-9]+`).Split(name, -1)
+		if len(parts) > 1 && parts[0] == "gemma" {
+			return parts[0] + "_" + parts[1]
+		}
+		return "gemma"
 	default:
 		parts := regexp.MustCompile(`[^a-zA-Z]+`).Split(name, -1)
 		if len(parts) > 0 && parts[0] != "" {
-			return appendSuffix(strings.ToLower(parts[0]), name)
+			return parts[0]
 		}
 		return sanitise(name)
 	}
-}
-
-func appendSuffix(base, name string) string {
-	if p := regexp.MustCompile(`(?i)(\d+\.?\d*)B`).FindStringSubmatch(name); len(p) > 1 {
-		base += ":" + strings.ToLower(p[1]) + "b"
-	}
-	return base
 }
 
 func sanitise(s string) string {
