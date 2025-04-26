@@ -13,7 +13,7 @@ var (
 )
 
 func RefreshModelList() {
-	ModelList = ModelList[:0]
+	ModelList = []Model{}
 	root := config.C.StoragePath
 	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
