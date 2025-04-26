@@ -12,10 +12,12 @@ var C *Config
 
 type Config struct {
 	StoragePath string `env:"STORAGE_PATH" validate:"required"`
+	NumCPUs     int    `env:"NUM_CPUS" validate:"required"`
 }
 
 func (c *Config) SetDefaults() {
 	c.StoragePath = "/rkllm"
+	c.NumCPUs = 8
 }
 
 func LoadConfig() {

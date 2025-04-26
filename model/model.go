@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/Tech-Arch1tect/rkllmopenapi/config"
 	"github.com/tech-arch1tect/rkllmwrapper-go/generated"
 )
 
@@ -41,6 +42,7 @@ func (r *ModelRunner) Ensure(ctx context.Context, m Model) error {
 	opts := generated.RkllmOptions{
 		Max_new_tokens:  MaxNewTokens,
 		Max_context_len: ContextSize,
+		Num_cpus:        int32(config.C.NumCPUs),
 	}
 	r.logger.Printf("Initialising %s with opts %+v\n", m.ModelPath, opts)
 	ret := generated.Rkllmwrapper_init(m.ModelPath, []generated.RkllmOptions{opts})
