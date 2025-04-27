@@ -16,10 +16,10 @@ import (
 	// WARNING!
 	// Pass --git-repo-id and --git-user-id properties when generating the code
 	//
-	"github.com/Tech-Arch1tect/rkllmopenapi/config"
-	sw "github.com/Tech-Arch1tect/rkllmopenapi/go"
-	"github.com/Tech-Arch1tect/rkllmopenapi/model"
-	"github.com/Tech-Arch1tect/rkllmopenapi/modelDownload/cmd"
+	"github.com/Tech-Arch1tect/rkllmopenai/config"
+	sw "github.com/Tech-Arch1tect/rkllmopenai/go"
+	"github.com/Tech-Arch1tect/rkllmopenai/model"
+	"github.com/Tech-Arch1tect/rkllmopenai/modelDownload/cmd"
 )
 
 func main() {

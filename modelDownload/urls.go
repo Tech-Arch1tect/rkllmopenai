@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/Tech-Arch1tect/rkllmopenapi/config"
+	"github.com/Tech-Arch1tect/rkllmopenai/config"
 )
 
 var (

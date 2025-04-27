@@ -1,4 +1,4 @@
-module github.com/Tech-Arch1tect/rkllmopenapi
+module github.com/Tech-Arch1tect/rkllmopenai
 
 go 1.24.2
 
