@@ -176,9 +176,11 @@ func (api *OpenAIAPI) CreateChatCompletion(c *gin.Context) {
 	stream := payload.Stream != nil && *payload.Stream
 
 	settings := model.ModelSettings{
-		Temperature:  *payload.Temperature,
-		MaxNewTokens: payload.MaxTokens,
-		TopP:         *payload.TopP,
+		Temperature:      *payload.Temperature,
+		MaxNewTokens:     payload.MaxTokens,
+		TopP:             *payload.TopP,
+		FrequencyPenalty: *payload.FrequencyPenalty,
+		PresencePenalty:  *payload.PresencePenalty,
 	}
 
 	handlePromptCompletion(c, chatMsgs, payload.Model, stream, settings)
@@ -204,9 +206,11 @@ func (api *OpenAIAPI) CreateCompletion(c *gin.Context) {
 	}
 
 	settings := model.ModelSettings{
-		Temperature:  *payload.Temperature,
-		MaxNewTokens: maxTokens,
-		TopP:         *payload.TopP,
+		Temperature:      *payload.Temperature,
+		MaxNewTokens:     maxTokens,
+		TopP:             *payload.TopP,
+		FrequencyPenalty: *payload.FrequencyPenalty,
+		PresencePenalty:  *payload.PresencePenalty,
 	}
 
 	handlePromptCompletion(c, userMsg, payload.Model, stream, settings)
