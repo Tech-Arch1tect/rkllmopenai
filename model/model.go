@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/Tech-Arch1tect/rkllmopenapi/config"
+	"github.com/Tech-Arch1tect/rkllmopenai/config"
 	"github.com/tech-arch1tect/rkllmwrapper-go/generated"
 )
 
