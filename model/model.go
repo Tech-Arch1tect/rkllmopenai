@@ -13,9 +13,14 @@ import (
 	"github.com/tech-arch1tect/rkllmwrapper-go/generated"
 )
 
+type ModelSettings struct {
+	Temperature  float32
+	MaxNewTokens int32
+	TopP         float32
+}
+
 const (
 	ContextSize       = 4096
-	MaxNewTokens      = 1024
 	DefaultBufferSize = 16384
 
 	RKLLMInputPrompt int32 = 0
@@ -23,16 +28,17 @@ const (
 )
 
 type ModelRunner struct {
-	currentModel string
-	logger       *log.Logger
+	currentSettings ModelSettings
+	currentModel    string
+	logger          *log.Logger
 }
 
 func NewModelRunner(logger *log.Logger) *ModelRunner {
 	return &ModelRunner{logger: logger}
 }
 
-func (r *ModelRunner) Ensure(ctx context.Context, m Model) error {
-	if r.currentModel == m.ModelName {
+func (r *ModelRunner) Ensure(ctx context.Context, m Model, settings ModelSettings) error {
+	if r.currentModel == m.ModelName && r.currentSettings == settings {
 		return nil
 	}
 	if r.currentModel != "" {
@@ -40,10 +46,13 @@ func (r *ModelRunner) Ensure(ctx context.Context, m Model) error {
 		r.Destroy()
 	}
 	opts := generated.RkllmOptions{
-		Max_new_tokens:  MaxNewTokens,
+		Max_new_tokens:  settings.MaxNewTokens,
 		Max_context_len: ContextSize,
 		Num_cpus:        int32(config.C.NumCPUs),
+		Temperature:     settings.Temperature,
+		Top_p:           settings.TopP,
 	}
+	r.currentSettings = settings
 	r.logger.Printf("Initialising %s with opts %+v\n", m.ModelPath, opts)
 	ret := generated.Rkllmwrapper_init(m.ModelPath, []generated.RkllmOptions{opts})
 	if ret != 0 {
@@ -53,7 +62,7 @@ func (r *ModelRunner) Ensure(ctx context.Context, m Model) error {
 	return nil
 }
 
-func (r *ModelRunner) Run(ctx context.Context, modelName, fifoPath string, msgs []ChatMessage) (string, error) {
+func (r *ModelRunner) Run(ctx context.Context, modelName, fifoPath string, msgs []ChatMessage, settings ModelSettings) (string, error) {
 	r.logger.Printf("Running model %s with %d messages", modelName, len(msgs))
 
 	RefreshModelList()
@@ -68,7 +77,7 @@ func (r *ModelRunner) Run(ctx context.Context, modelName, fifoPath string, msgs 
 		return "", fmt.Errorf("model %q not found", modelName)
 	}
 
-	if err := r.Ensure(ctx, m); err != nil {
+	if err := r.Ensure(ctx, m, settings); err != nil {
 		return "", err
 	}
 

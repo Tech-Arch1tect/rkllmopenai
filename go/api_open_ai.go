@@ -38,7 +38,7 @@ func (api *OpenAIAPI) CancelFineTune(c *gin.Context) {
 }
 
 // Utility function for handling streaming
-func handleStreaming(c *gin.Context, ctx context.Context, modelName string, chatMsgs []model.ChatMessage) {
+func handleStreaming(c *gin.Context, ctx context.Context, modelName string, chatMsgs []model.ChatMessage, settings model.ModelSettings) {
 	fifo := filepath.Join(os.TempDir(), "rkllm_"+uuid.New().String()+".fifo")
 	if err := model.EnsureFifo(fifo); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create FIFO"})
@@ -65,7 +65,7 @@ func handleStreaming(c *gin.Context, ctx context.Context, modelName string, chat
 	}
 
 	go func() {
-		if _, err := runner.Run(ctx, modelName, fifo, chatMsgs); err != nil {
+		if _, err := runner.Run(ctx, modelName, fifo, chatMsgs, settings); err != nil {
 			log.Printf("Inference error: %v", err)
 		}
 	}()
@@ -124,8 +124,8 @@ func handleStreaming(c *gin.Context, ctx context.Context, modelName string, chat
 }
 
 // Common handler for non-streaming completions
-func handleCompletion(c *gin.Context, ctx context.Context, modelName string, chatMsgs []model.ChatMessage) {
-	out, err := runner.Run(ctx, modelName, "", chatMsgs)
+func handleCompletion(c *gin.Context, ctx context.Context, modelName string, chatMsgs []model.ChatMessage, settings model.ModelSettings) {
+	out, err := runner.Run(ctx, modelName, "", chatMsgs, settings)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{"message": "inference error", "detail": err.Error()},
@@ -148,15 +148,15 @@ func handleCompletion(c *gin.Context, ctx context.Context, modelName string, cha
 }
 
 // Common handler for completions
-func handlePromptCompletion(c *gin.Context, messages []model.ChatMessage, modelName string, stream bool) {
+func handlePromptCompletion(c *gin.Context, messages []model.ChatMessage, modelName string, stream bool, settings model.ModelSettings) {
 	ctx := c.Request.Context()
 
 	if stream {
-		handleStreaming(c, ctx, modelName, messages)
+		handleStreaming(c, ctx, modelName, messages, settings)
 		return
 	}
 
-	handleCompletion(c, ctx, modelName, messages)
+	handleCompletion(c, ctx, modelName, messages, settings)
 }
 
 // Post /v1/chat/completions
@@ -175,7 +175,13 @@ func (api *OpenAIAPI) CreateChatCompletion(c *gin.Context) {
 
 	stream := payload.Stream != nil && *payload.Stream
 
-	handlePromptCompletion(c, chatMsgs, payload.Model, stream)
+	settings := model.ModelSettings{
+		Temperature:  *payload.Temperature,
+		MaxNewTokens: payload.MaxTokens,
+		TopP:         *payload.TopP,
+	}
+
+	handlePromptCompletion(c, chatMsgs, payload.Model, stream, settings)
 }
 
 // Post /v1/completions
@@ -191,7 +197,19 @@ func (api *OpenAIAPI) CreateCompletion(c *gin.Context) {
 
 	stream := payload.Stream != nil && *payload.Stream
 
-	handlePromptCompletion(c, userMsg, payload.Model, stream)
+	maxTokens := int32(*payload.MaxTokens)
+
+	if maxTokens == 0 {
+		maxTokens = 1024
+	}
+
+	settings := model.ModelSettings{
+		Temperature:  *payload.Temperature,
+		MaxNewTokens: maxTokens,
+		TopP:         *payload.TopP,
+	}
+
+	handlePromptCompletion(c, userMsg, payload.Model, stream, settings)
 }
 
 // Post /v1/edits
