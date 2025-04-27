@@ -48,13 +48,14 @@ func (r *ModelRunner) Ensure(ctx context.Context, m Model, settings ModelSetting
 		r.Destroy()
 	}
 	opts := generated.RkllmOptions{
-		Max_new_tokens:    settings.MaxNewTokens,
-		Max_context_len:   ContextSize,
-		Num_cpus:          int32(config.C.NumCPUs),
-		Temperature:       settings.Temperature,
-		Top_p:             settings.TopP,
-		Frequency_penalty: settings.FrequencyPenalty,
-		Presence_penalty:  settings.PresencePenalty,
+		Max_new_tokens:     settings.MaxNewTokens,
+		Max_context_len:    ContextSize,
+		Num_cpus:           int32(config.C.NumCPUs),
+		Temperature:        settings.Temperature,
+		Top_p:              settings.TopP,
+		Frequency_penalty:  settings.FrequencyPenalty,
+		Presence_penalty:   settings.PresencePenalty,
+		Skip_special_token: 1,
 	}
 	r.currentSettings = settings
 	r.logger.Printf("Initialising %s with opts %+v\n", m.ModelPath, opts)
