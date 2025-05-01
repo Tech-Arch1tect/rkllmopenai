@@ -1,5 +1,6 @@
 services:
   app:
+    restart: always
     image: rkllm-openapi:latest
     build: .
     ports:
