@@ -107,7 +107,7 @@ var SpecialTokens = map[string]map[string]string{
 		"user":                "<|User|>",
 		"assistant":           "<|Assistant|>",
 		"system":              "<|System|>",
-		"addGenerationPrompt": "true",
+		"addGenerationPrompt": "false",
 	},
 	"gemma_3": {
 		"unk":                  "<unk>",
