@@ -12,8 +12,8 @@ RUN apt-get update && \
       curl \
       && rm -rf /var/lib/apt/lists/*
 
-RUN wget https://raw.githubusercontent.com/airockchip/rknn-llm/refs/tags/release-v1.2.0/rkllm-runtime/Linux/librkllm_api/include/rkllm.h -O /usr/include/rkllm.h
-RUN wget https://github.com/airockchip/rknn-llm/raw/refs/tags/release-v1.2.0/rkllm-runtime/Linux/librkllm_api/aarch64/librkllmrt.so -O /usr/lib/librkllmrt.so
+RUN wget https://raw.githubusercontent.com/airockchip/rknn-llm/refs/tags/release-v1.2.1b1/rkllm-runtime/Linux/librkllm_api/include/rkllm.h -O /usr/include/rkllm.h
+RUN wget https://github.com/airockchip/rknn-llm/raw/refs/tags/release-v1.2.1b1/rkllm-runtime/Linux/librkllm_api/aarch64/librkllmrt.so -O /usr/lib/librkllmrt.so
 
 WORKDIR /src/c
 RUN git clone https://github.com/Tech-Arch1tect/rkllmwrapper.git
