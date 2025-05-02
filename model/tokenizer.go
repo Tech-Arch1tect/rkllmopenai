@@ -122,6 +122,19 @@ var SpecialTokens = map[string]map[string]string{
 		"addGenerationPrompt":  "false",
 		"postGenerationPrompt": "<start_of_turn>model\n",
 	},
+	"qwen_3": {
+		"unk":                  "<nil>",
+		"eos":                  "<|im_end|>",
+		"pad":                  "<|endoftext|>",
+		"bos":                  "<nil>",
+		"bot":                  "<nil>",
+		"eot":                  "<|im_end|>\n",
+		"user":                 "<|im_start|>user\n",
+		"assistant":            "<|im_start|>assistant\n",
+		"system":               "<|im_start|>system\n",
+		"addGenerationPrompt":  "false",
+		"postGenerationPrompt": "<|im_start|>assistant\n",
+	},
 }
 
 func GetSpecialTokens(key string) (map[string]string, bool) {
@@ -147,7 +160,10 @@ func GetSimplifiedModelName(full string) string {
 	case len(qwenMatch) > 1:
 		family := strings.ToLower(qwenMatch[1])
 		if strings.Contains(family, "2") {
-			family = "qwen2.5"
+			family = "qwen_2"
+		}
+		if strings.Contains(family, "3") {
+			family = "qwen_3"
 		}
 		return family
 	case regexp.MustCompile(`(?i)mistral`).MatchString(name):
