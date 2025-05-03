@@ -9,4 +9,6 @@ services:
       - STORAGE_PATH=/rkllm
     volumes:
       - ../storage:/rkllm
+    #      - ./lib/librkllm_wrapper.so:/usr/lib/librkllm_wrapper.so
+    #      - ./lib/librkllmrt.so:/usr/lib/librkllmrt.so
     privileged: true
